@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from io import StringIO
 import time
+import random
 
 url = "https://fbref.com/en/comps/676/stats/UEFA-Euro-Stats"
 urlData = requests.get(url)
@@ -11,7 +12,7 @@ urlData = requests.get(url)
 # Team links
 soup = BeautifulSoup(urlData.text, "html.parser")
 standingsTable = soup.select("table.stats_table")[0]
-links = standingsTable.findAll("a")
+links = standingsTable.find_all("a")
 links = [l.get("href") for l in links]
 links = [l for l in links if "/squads/" in l]
 #print(links)  # is showing the relative links of each team.
@@ -71,20 +72,14 @@ euroTeamData = euroGames.merge(euroShooting[["Date", "Gls", "Sh", "SoT", "FK", "
 years = list(range(2024, 2020, -3))
 allMatches = []
 for year in years:
-    urlData = requests.get(url)
-    soup = BeautifulSoup(urlData.text, "html.parser")
-    standingsTable = soup.select("table.stats_table")[0]
-    links = [l.get("href") for l in standingsTable.find_all("a")]
-    links = [l for l in links if "/squads/" in l]
-    teamUrls = [f"https://fbref.com{l}" for l in links]
 
     prevComp = soup.select("a.prev")[0].get("href")
     standingsUrl = f"https://fbref.com{prevComp}"
 
     for teamUrl in teamUrls:
         teamName = teamUrl.split("/")[-1].replace("-Men-Stats", "")  # Get the names of each team.
-        print(teamName)
 
+        time.sleep(5)
         teamData = requests.get(teamUrl)
         htmlData = StringIO(teamData.text)  # This wraps the html data so the data is protected if panda gets updated.
         matches = pd.read_html(htmlData, match="Scores & Fixtures")
@@ -94,15 +89,22 @@ for year in years:
         links3 = [l for l in links3 if l and "c676/shooting/" in l]
         links3 = list(set(links3))  # removes duplicate links and making it a list removes the {} that sets automatically format.
         links3 = ', '.join(links3)  # removes the [] that lists automatically formats and converts to a string, so that it can be formatted properly.
+        time.sleep(5)
         euroShootingUrls = [f"https://fbref.com{links3}"]
         euroShooting = pd.read_html(euroShootingHtmlData, match="Shooting")[0]
         euroShooting.columns = euroShooting.columns.droplevel()  # Removes first index level thats not needed.
 
+        try:
+            euroTeamData = euroGames.merge(euroShooting[["Date", "Gls", "Sh", "SoT", "FK", "PK", "PKatt"]], on="Date")
+            time.sleep(5)
+        except ValueError:
+            continue
+
         euroTeamData["Date"] = year
         euroTeamData["Team"] = teamName
         allMatches.append(euroTeamData)
-        time.sleep(5)
+        time.sleep(random.uniform(5, 10))  # Picks a random time from 5 and 10 secs.
 
 matchData = pd.concat(allMatches)
-matchData.to_csv("matches.csv")
 print(matchData)
+matchData.to_csv("matches.csv")
