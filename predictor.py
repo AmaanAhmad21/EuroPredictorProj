@@ -1,14 +1,46 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import precision_score
+from sklearn.metrics import accuracy_score, precision_score
 
+# Read and preprocess the data
 matches = pd.read_csv("matches.csv", index_col=0)
-matches["Date"] = pd.to_datetime(matches["Date"])  # converts date column from object to datetime.
-matches["oppCode"] = matches["Opponent"].astype("category").cat.codes  # adds a column to keep track of opponents using a code.
-matches["Hour"] = matches["Time"].str.replace(":.+", "", regex=True).astype(int)  # adds a column to keep the Hour time simpler.
-matches["dayCode"] = matches["Date"].dt.dayofweek  # adds a column to keep track of days using a code.
-matches["Target"] = (matches["Result"] == "W").astype(int)  # adds a column to keep track of result using a code.
+matches["Date"] = pd.to_datetime(matches["Date"])
+matches["oppCode"] = matches["Opponent"].astype("category").cat.codes
+matches["Hour"] = matches["Time"].str.replace(":.+", "", regex=True).astype(int)
+matches["dayCode"] = matches["Date"].dt.dayofweek
+matches["Target"] = (matches["Result"] == "W").astype(int)
+
+# Map opponents to standardized names
+mapValues = {
+    "it Italy": "Italy",
+    "hr Croatia": "Croatia",
+    "es Spain": "Spain",
+    "fr France": "France",
+    "pl Poland": "Poland",
+    "nl Netherlands": "Netherlands",
+    "tr Türkiye": "Turkiye",
+    "sk Slovakia": "Slovakia",
+    "ro Romania": "Romania",
+    "ua Ukraine": "Ukraine",
+    "al Albania": "Albania",
+    "pt Portugal": "Portugal",
+    "ge Georgia": "Georgia",
+    "si Slovenia": "Slovenia",
+    "eng England": "England",
+    "rs Serbia": "Serbia",
+    "de Germany": "Germany",
+    "dk Denmark": "Denmark",
+    "ch Switzerland": "Switzerland",
+    "at Austria": "Austria",
+    "be Belgium": "Belgium",
+    "cz Czechia": "Czechia",
+    "sct Scotland": "Scotland",
+    "hu Hungary": "Hungary"
+}
+
+# Create a mapping dictionary
+mapping = pd.Series(mapValues).to_dict()
+matches["StandardizedOpponent"] = matches["Opponent"].map(mapping)
 
 # Define predictors and target
 predictors = ["oppCode", "Hour", "dayCode"]
@@ -29,11 +61,20 @@ rf.fit(train_X, train_y)
 # Predict and evaluate accuracy
 predict = rf.predict(test_X)
 acc = accuracy_score(test_y, predict)
-
-# Create combined DataFrame
-combined = pd.DataFrame({"actual": test_y.values, "prediction": predict})
-
-# Print confusion matrix
-confusion_matrix = pd.crosstab(index=combined["actual"], columns=combined["prediction"], rownames=['Actual'], colnames=['Predicted'])
 precision = precision_score(test_y, predict)
-print(precision)
+print(f"Accuracy Score: {acc}")
+print(f"Precision Score: {precision}")
+
+# Create combined DataFrame for predictions
+test_matches = matches.iloc[split_index:].copy()
+test_matches["actual"] = test_y.values
+test_matches["prediction"] = predict
+
+print("Combined DataFrame with predictions:")
+print(test_matches.head(15))
+test_matches.to_csv("predictions.csv")
+
+
+# Check counts of actual vs predicted results
+confusion_matrix = pd.crosstab(test_matches["actual"], test_matches["prediction"], rownames=['Actual'], colnames=['Predicted'])
+print(confusion_matrix)
