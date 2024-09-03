@@ -75,4 +75,5 @@ for i in teamUrls:
 
 matchData = pd.concat(allMatches)
 print(matchData)
+matchData = matchData.dropna(subset=["Date"])
 matchData.to_csv("matches.csv")
