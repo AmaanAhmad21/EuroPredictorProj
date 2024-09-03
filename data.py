@@ -26,6 +26,7 @@ for i in teamUrls:
     matches = pd.read_html(htmlData, match="Scores & Fixtures")
     time.sleep(2)
 
+    # Schedule links for Euro teams.
     soup1 = BeautifulSoup(htmlData, "html.parser")
     links2 = soup1.find_all("a")
     links2 = [l.get("href") for l in links2]
@@ -37,11 +38,13 @@ for i in teamUrls:
 
     for j in euroUrls:
         time.sleep(1)
+        # Euro games stats.
         euroData = requests.get(j)
         euroHtmlData = StringIO(euroData.text)  # This wraps the html data so the data is protected if panda gets updated.
         euroGames = pd.read_html(euroHtmlData, match="UEFA Euro 2024")[0]
         time.sleep(1)
 
+        # Shooting links for Euro games.
         soup2 = BeautifulSoup(euroHtmlData, "html.parser")
         links3 = soup2.find_all("a")
         links3 = [l.get("href") for l in links3]
@@ -51,6 +54,7 @@ for i in teamUrls:
         euroShootingUrls = [f"https://fbref.com{links3}"]
         time.sleep(1)
 
+        # Euro games shooting stats.
         euroShootingUrl = euroShootingUrls[0]
         euroShootingData = requests.get(euroShootingUrl)
         euroShootingHtmlData = StringIO(euroShootingData.text)  # This wraps the html data so the data is protected if panda gets updated.
@@ -58,6 +62,7 @@ for i in teamUrls:
         euroShooting.columns = euroShooting.columns.droplevel()  # Removes first index level thats not needed.
         time.sleep(1)
 
+        # Merge Euro matches and shooting data.
         try:
             euroTeamData = euroGames.merge(euroShooting[["Date", "Gls", "Sh", "SoT", "FK", "PK", "PKatt"]], on="Date")
             time.sleep(2)
