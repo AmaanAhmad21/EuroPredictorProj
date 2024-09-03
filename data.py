@@ -65,6 +65,7 @@ for i in teamUrls:
         # Merge Euro matches and shooting data.
         try:
             euroTeamData = euroGames.merge(euroShooting[["Date", "Gls", "Sh", "SoT", "FK", "PK", "PKatt"]], on="Date")
+            euroTeamData["Team"] = teamName  # adds a team name column to data.
             time.sleep(2)
         except ValueError:
             continue
